@@ -1,44 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "./ITradeContract.sol";
 import "./ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract TradeContract is ReentrancyGuard {
+contract TradeContract is  ITradeContract , ReentrancyGuard {
   using SafeERC20 for IERC20;
   using ECDSA for bytes32;
-
-  enum OrderState{
-    None,
-    Listed,
-    Released
-  }
-
-  struct Order {
-    uint256 amount; //considering 1 eth = 1 token;
-    address seller;
-    address tokenAddress;
-    OrderState state;
-    address[] buyers;
-    uint256[] messages;
-  }
-  
-  error InvalidOrderId();
-  error InsufficientFunds();
-  error AlreadyListed();
-  error InvalidAmount();
-  error NotListedOrReleased();
-  error NotBuyer();
-  error TransactionFailed();
-  error NotActualSeller();
-  error OnlyBuyersAllowed();
-  error AlreadyRegistered();
-
-  event ListOrder(address indexed seller , uint256 indexed amount , address indexed tokenAddress , OrderState state);
-  event RegisterBuyer(address indexed buyer , uint256 indexed orderId , uint256 indexed message);
-  event ReleaseFunds(address indexed buyer, address indexed recoveredAddress , uint256 orderId , bytes indexed sign);
   
   uint256 private orderId;
   mapping(uint256 => Order) private orders;
