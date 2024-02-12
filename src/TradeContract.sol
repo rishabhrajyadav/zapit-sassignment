@@ -24,7 +24,8 @@ contract TradeContract is ReentrancyGuard {
     address[] buyers;
     uint256[] messages;
   }
-
+  
+  error InvalidOrderId();
   error InsufficientFunds();
   error AlreadyListed();
   error InvalidAmount();
@@ -35,9 +36,9 @@ contract TradeContract is ReentrancyGuard {
   error OnlyBuyersAllowed();
   error AlreadyRegistered();
 
-  event ListOrder(address seller , uint256 amount , address tokenAddress , OrderState state);
-  event RegisterBuyer(address buyer , uint256 orderId , uint256 message);
-  event ReleaseFunds(address buyer , address recoveredId , uint256 orderId , bytes sign);
+  event ListOrder(address indexed seller , uint256 indexed amount , address indexed tokenAddress , OrderState state);
+  event RegisterBuyer(address indexed buyer , uint256 indexed orderId , uint256 indexed message);
+  event ReleaseFunds(address indexed buyer, address indexed recoveredAddress , uint256 orderId , bytes indexed sign);
   
   uint256 private orderId;
   mapping(uint256 => Order) private orders;
@@ -50,11 +51,11 @@ contract TradeContract is ReentrancyGuard {
     order.seller = msg.sender;
     if(_tokenAddress == address(0)){
       // this checks whether the seller sends enough ether to this contract;
-      if( _amount != msg.value ) revert InsufficientFunds();
+      if( _amount != msg.value/ 10**18 ) revert InsufficientFunds();
       order.amount = _amount;
     } else {
       //this checks whether the seller have enough tokens and the tokens are approved to this contract
-      if(IERC20(_tokenAddress).balanceOf(msg.sender) != _amount || !IERC20(_tokenAddress).approve(address(this) , _amount)) revert InsufficientFunds(); //plus approve the contract
+      if(IERC20(_tokenAddress).balanceOf(msg.sender) < _amount || !IERC20(_tokenAddress).approve(address(this) , _amount) || IERC20(_tokenAddress).allowance(msg.sender , address(this)) != _amount ) revert InsufficientFunds(); //plus approve the contract
       order.amount = _amount;
     }
     order.tokenAddress = _tokenAddress;
@@ -64,6 +65,7 @@ contract TradeContract is ReentrancyGuard {
   }
 
   function registerBuyer(uint256 _orderId , uint256 _message) external nonReentrant {
+    if(orderId < _orderId) revert InvalidOrderId();
     Order memory order = orders[_orderId];
     if( order.seller == msg.sender) revert OnlyBuyersAllowed();
     if( inArray(msg.sender, _orderId) ) revert AlreadyRegistered(); //Be cautious as you can only register once
@@ -85,8 +87,9 @@ contract TradeContract is ReentrancyGuard {
     orders[_orderId].state = OrderState.Released;
 
     uint256 _message = bMessages[orderId][msg.sender];
-    address recoveredAddress = recover2(_message, _sign);
-    
+    bytes32 messageHashh = keccak256(abi.encodePacked(msg.sender , _message)); //msg.sender = buyer's Address
+    bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHashh));
+    address recoveredAddress = messageHash.recover(_sign);
     if(recoveredAddress != order.seller) revert NotActualSeller();
 
       if(order.tokenAddress != address(0)){
@@ -94,7 +97,7 @@ contract TradeContract is ReentrancyGuard {
          bool ok = token.transferFrom(order.seller, msg.sender , order.amount);
          if(!ok) revert TransactionFailed();
       } else{
-        (bool ok,) = payable(order.seller).call{value : order.amount * 10**18}("");
+        (bool ok,) = payable(msg.sender).call{value : order.amount * 10**18}("");
         if(!ok) revert TransactionFailed();
       }
     
@@ -105,12 +108,19 @@ contract TradeContract is ReentrancyGuard {
     return orders[_orderId];
   }
 
-  function recover2(uint256 _number , bytes memory _sign) private view returns(address){
-        bytes32 messageHashh = keccak256(abi.encodePacked(address(this), msg.sender ,_number)); //msg.sender = buyer's Address
-        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHashh));
+  function recover2(bytes32 _hash , bytes memory _sign) external pure returns(address){
+        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _hash));
         address recoveredAddress = messageHash.recover(_sign);
         return recoveredAddress;
     }
+
+  function getMessages(uint256 _orderId,address _buyer) external view returns (uint256){
+    return bMessages[_orderId][_buyer];
+  }
+
+   function totalOrders() external view returns (uint256){
+    return orderId;
+  }   
 
   function inArray(address _user , uint256 _orderId) private view returns(bool) {
     Order memory order = orders[_orderId];
