@@ -163,11 +163,12 @@ contract TradeContractTest is Test{
         uint256 privateKey = 123;
         address seller = vm.addr(privateKey);
         deal(seller , 2 ether);
-       
+        uint256 message = 456;
+
         vm.startPrank(seller);
         tradeContract.listOrder{value : 1 ether}(1 , etherAddress);
         
-        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) , uint(456))); //msg.sender = buyer's Address
+        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) ,message)); //msg.sender = buyer's Address
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHashh)); 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, messageHash);
         bytes memory signature = abi.encodePacked(r, s, v); // note the order here is different from line above.
@@ -178,7 +179,108 @@ contract TradeContractTest is Test{
         
         vm.startPrank(address(2));
 
-        tradeContract.registerBuyer(1, 456);
+        tradeContract.registerBuyer(1, message);
+        address recoveredAddress2 = tradeContract.recover2(messageHashh, signature);
+        assertEq(recoveredAddress , recoveredAddress2);
+
+        tradeContract.releaseFunds(1, signature);
+        assertEq(address(2).balance, 1 ether); 
+        assertEq(address(seller).balance, 1 ether); 
+
+        vm.stopPrank();
+    }
+
+    // Test releasing ERC20 as funds 
+    function testReleaseERC20Funds() public {
+        uint256 privateKey = 123;
+        address seller = vm.addr(privateKey);
+        token._mint(seller, 1000);
+        uint256 message = 456;
+
+        vm.startPrank(seller);
+
+        token.approve(address(tradeContract), 1000);
+        assertEq(token.allowance(seller, address(tradeContract)), 1000);
+        tradeContract.listOrder(1000, address(token));
+        
+        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) , message)); //msg.sender = buyer's Address
+        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHashh)); 
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, messageHash);
+        bytes memory signature = abi.encodePacked(r, s, v); // note the order here is different from line above.
+        address recoveredAddress =  messageHash.recover(signature);
+        assertEq( recoveredAddress , seller);
+
+        vm.stopPrank();
+        
+        vm.startPrank(address(2));
+
+        tradeContract.registerBuyer(1, message);
+        address recoveredAddress2 = tradeContract.recover2(messageHashh, signature);
+        assertEq(recoveredAddress , recoveredAddress2);
+
+        tradeContract.releaseFunds(1, signature);
+        assertEq(token.balanceOf(address(2)), 1000); 
+        assertEq(token.balanceOf(seller), 0); 
+        vm.stopPrank();
+    }
+    
+    // Failing Test : when the message is different then verified message
+    function testFailReleaseToUnverifiedMessage() public {
+        uint256 privateKey = 123;
+        address seller = vm.addr(privateKey);
+        token._mint(seller, 1000);
+        uint256 message = 789;
+
+        vm.startPrank(seller);
+
+        token.approve(address(tradeContract), 1000);
+        assertEq(token.allowance(seller, address(tradeContract)), 1000);
+        tradeContract.listOrder(1000, address(token));
+        
+        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) , message)); //msg.sender = buyer's Address
+        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHashh)); 
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, messageHash);
+        bytes memory signature = abi.encodePacked(r, s, v); // note the order here is different from line above.
+        address recoveredAddress =  messageHash.recover(signature);
+        assertEq( recoveredAddress , seller);
+
+        vm.stopPrank();
+        
+        vm.startPrank(address(2));
+        //Buyer's Message Is Different
+        uint256 buyersMessage = 456;
+        tradeContract.registerBuyer(1, buyersMessage);
+        address recoveredAddress2 = tradeContract.recover2(messageHashh, signature);
+        assertEq(recoveredAddress , recoveredAddress2);
+
+        tradeContract.releaseFunds(1, signature);
+        assertEq(token.balanceOf(address(2)), 1000); 
+        assertEq(token.balanceOf(seller), 0); 
+        vm.stopPrank();
+    }
+    
+    // Failing Test : when the funds already got released.
+    function testFailForAlreadyReleasedFunds() public {
+        uint256 privateKey = 123;
+        address seller = vm.addr(privateKey);
+        deal(seller , 2 ether);
+        uint256 message = 456;
+
+        vm.startPrank(seller);
+        tradeContract.listOrder{value : 1 ether}(1 , etherAddress);
+        
+        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) ,message)); //msg.sender = buyer's Address
+        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHashh)); 
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, messageHash);
+        bytes memory signature = abi.encodePacked(r, s, v); // note the order here is different from line above.
+        address recoveredAddress =  messageHash.recover(signature);
+        assertEq( recoveredAddress , seller);
+
+        vm.stopPrank();
+        
+        vm.startPrank(address(2));
+
+        tradeContract.registerBuyer(1, message);
         address recoveredAddress2 = tradeContract.recover2(messageHashh, signature);
         assertEq(recoveredAddress , recoveredAddress2);
 
@@ -189,28 +291,49 @@ contract TradeContractTest is Test{
         vm.stopPrank();
 
         vm.startPrank(address(3));
-        
-        vm.expectRevert();
-        tradeContract.registerBuyer(2, 456); //orderid = 2 does not exist
-        address recoveredAddress3 = tradeContract.recover2(messageHashh, signature);
-        assertEq(recoveredAddress , recoveredAddress3);
-
+        //Funds are already released for orderId = 1
+        tradeContract.registerBuyer(1, 456);  
         vm.stopPrank();
     }
 
-    // Test releasing ERC20 as funds 
-    function testReleaseERC20Funds() public {
+    // Failing Test : when the buyer tries to register to an Invalid Order Id   
+    function testFailBuyersInvalidId() public {
         uint256 privateKey = 123;
         address seller = vm.addr(privateKey);
-        token._mint(seller, 1000);
-       
-        vm.startPrank(seller);
-
-        token.approve(address(tradeContract), 1000);
-        assertEq(token.allowance(seller, address(tradeContract)), 1000);
-        tradeContract.listOrder(1000, address(token));
+        deal(seller , 2 ether);
         
-        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) , uint(456))); //msg.sender = buyer's Address
+        vm.prank(address(3));
+        //orderid = 2 does not exist
+        tradeContract.registerBuyer(2, 456);     
+     }
+
+    // Failing Test : when the same buyer tries to register himself agian
+    function testFailBuyerRegistersAgian() public {
+        uint256 privateKey = 123;
+        address seller = vm.addr(privateKey);
+        deal(seller , 2 ether);
+
+        vm.prank(seller);
+        tradeContract.listOrder{value : 1 ether}(1 , etherAddress);
+        
+        vm.startPrank(address(3));  
+        tradeContract.registerBuyer(1, 456);
+        //buyer tries to register again
+        tradeContract.registerBuyer(1, 456);
+        vm.stopPrank();
+    }
+
+    // Failing Test : when the an Unregistered buyer tries to release the funds
+    function testFailUnregisteredBuyer() public {
+        uint256 privateKey = 123;
+        address seller = vm.addr(privateKey);
+        deal(seller , 2 ether);
+        uint256 message = 456;
+
+        vm.startPrank(seller);
+        tradeContract.listOrder{value : 1 ether}(1 , etherAddress);
+        
+        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) ,message)); //msg.sender = buyer's Address
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHashh)); 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, messageHash);
         bytes memory signature = abi.encodePacked(r, s, v); // note the order here is different from line above.
@@ -220,14 +343,21 @@ contract TradeContractTest is Test{
         vm.stopPrank();
         
         vm.startPrank(address(2));
+        //Buyer not registered  
+        tradeContract.releaseFunds(1, signature); 
+        vm.stopPrank();
 
-        tradeContract.registerBuyer(1, 456);
-        address recoveredAddress2 = tradeContract.recover2(messageHashh, signature);
-        assertEq(recoveredAddress , recoveredAddress2);
+    }
+    
+    // Failing Test : when the seller tries to register as the buyer
+    function testFailSellerRegisterAsBuyer() public {
+        vm.startPrank(address(5));
+        token.approve(address(tradeContract), 1000);
+        assertEq(token.allowance(address(5), address(tradeContract)), 1000);
 
-        tradeContract.releaseFunds(1, signature);
-        assertEq(token.balanceOf(address(2)), 1000); 
-        assertEq(token.balanceOf(seller), 0); 
+        tradeContract.listOrder(1000, address(token));
+        //Seller tries to register as Buyer
+        tradeContract.registerBuyer(1, 123);
         vm.stopPrank();
     }
 

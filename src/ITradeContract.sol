@@ -44,7 +44,7 @@ pragma solidity ^0.8.13;
     error NotBuyer();
     error TransactionFailed();
     error NotActualSeller();
-    error OnlyBuyersAllowed();
+    error SellersNotAllowed();
     error AlreadyRegistered();
 
     /* -------------------------------------------------------------------------- */

@@ -38,7 +38,7 @@ contract TradeContract is  ITradeContract , ReentrancyGuard {
   function registerBuyer(uint256 _orderId , uint256 _message) external nonReentrant {
     if(orderId < _orderId) revert InvalidOrderId();
     Order memory order = orders[_orderId];
-    if( order.seller == msg.sender) revert OnlyBuyersAllowed();
+    if( order.seller == msg.sender) revert SellersNotAllowed();
     if( inArray(msg.sender, _orderId) ) revert AlreadyRegistered(); //Be cautious as you can only register once
     if( order.state != OrderState.Listed ) revert NotListedOrReleased();
     

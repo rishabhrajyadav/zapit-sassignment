@@ -30,11 +30,11 @@ Enables buyers to register themselves by providing a random number.
 
 ### 3. `releaseFunds`
 
-Allows sellers to release funds from an order by verifying the signature.
+Allows buyers to release funds from an order by verifying the signature.
 
 - **Parameters:**
   - `_orderId`: The ID of the order from which the buyer wants to release funds.
-  - `_sign`: The signature provided by the buyer.
+  - `_sign`: The signature provided by the seller.
 
 ## Usage
 
