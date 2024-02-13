@@ -30,10 +30,10 @@ Enables buyers to register themselves by providing a random number.
 
 ### 3. `releaseFunds`
 
-Allows buyers to release funds from an order by verifying the signature.
+This Allows sellers to release funds from an order by verifying the signature.
 
 - **Parameters:**
-  - `_orderId`: The ID of the order from which the buyer wants to release funds.
+  - `_orderId`: The ID of the order from which the seller wants to release funds.
   - `_sign`: The signature provided by the seller.
 
 ## Usage
@@ -49,8 +49,25 @@ Allows buyers to release funds from an order by verifying the signature.
 
 ## Instructions for Testing
 
-1. Deploy the `TradeContract` on a testnet.
-2. Use the provided functions to list orders, register buyers, and release funds.
+Before deploying the smart contract, it's essential to run and pass the provided tests. 
+Ensure that your development environment and dependencies are properly set up. Run the following tests for the `TradeContract`:
+
+- testFailBuyerRegistersAgian
+- testFailBuyersInvalidId
+- testFailForAlreadyReleasedFunds
+- testFailReleaseToUnverifiedMessage
+- testFailSellerRegisterAsBuyer
+- testFailUnregisteredBuyer
+- testFetchOrderDetails
+- testListMultipleOrdersWithERC20token
+- testListMultipleOrdersWithEther
+- testListMultipleOrdersWithEtherAndERC20
+- testListOrderWithERC20token
+- testListOrderWithEther
+- testRegisterBuyer
+- testRegisterMultipleBuyers
+- testReleaseERC20Funds
+- testReleaseEtherFunds
 
 ## License
 

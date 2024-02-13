@@ -41,7 +41,8 @@ pragma solidity ^0.8.13;
     error AlreadyListed();
     error InvalidAmount();
     error NotListedOrReleased();
-    error NotBuyer();
+    error BuyerNotRegistered();
+    error NotSeller();
     error TransactionFailed();
     error NotActualSeller();
     error SellersNotAllowed();
@@ -55,7 +56,7 @@ pragma solidity ^0.8.13;
 
     function registerBuyer(uint256 _orderId , uint256 _message) external;
 
-    function releaseFunds(uint256 _orderId , bytes memory _sign) external;
+    function releaseFunds(uint256 _orderId , bytes memory _sign , address _buyer) external;
 
     function fetchOrderDetails(uint256 _orderId) external view returns(Order memory);
 

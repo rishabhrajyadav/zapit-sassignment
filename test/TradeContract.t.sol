@@ -22,31 +22,34 @@ contract TradeContractTest is Test{
      
     // Test listing an order using ERC20Token
     function testListOrderWithERC20token() public {
-        vm.startPrank(address(5));
+        address seller = address(5);
+        vm.startPrank(seller);
         token.approve(address(tradeContract), 1000);
-        assertEq(token.allowance(address(5), address(tradeContract)), 1000);
+        assertEq(token.allowance(seller, address(tradeContract)), 1000);
 
         tradeContract.listOrder(1000, address(token));
         vm.stopPrank();
 
         TradeContract.Order memory order = tradeContract.fetchOrderDetails(1);
-        assertEq(order.seller, address(5));
-        assertEq(token.balanceOf(address(5)), 1000);
+        assertEq(order.seller, seller);
+        assertEq(token.balanceOf(seller), 1000);
     }
 
     // Test listing multiple orders using ERC20Token 
     function testListMultipleOrdersWithERC20token() public {
-        vm.startPrank(address(5));
+        address seller = address(5);
+        vm.startPrank(seller);
         token.approve(address(tradeContract), 1000);
-        assertEq(token.allowance(address(5), address(tradeContract)), 1000);
+        assertEq(token.allowance(seller, address(tradeContract)), 1000);
 
         tradeContract.listOrder(1000, address(token));
         vm.stopPrank();
-
-        vm.startPrank(address(4));
-        token._mint(address(4), 100);
+        
+        address seller2 = address(4);
+        vm.startPrank(seller2);
+        token._mint(seller2, 100);
         token.approve(address(tradeContract), 100);
-        assertEq(token.allowance(address(4), address(tradeContract)), 100);
+        assertEq(token.allowance(seller2, address(tradeContract)), 100);
 
         tradeContract.listOrder(100, address(token));
         vm.stopPrank();
@@ -57,13 +60,14 @@ contract TradeContractTest is Test{
 
     // Test listing an order using Ether 
     function testListOrderWithEther() public {
-        hoax(address(1) , 2 ether);
+        address seller = address(1);
+        hoax(seller , 2 ether);
         tradeContract.listOrder{value : 1 ether}(1 , etherAddress);
         
         TradeContract.Order memory order = tradeContract.fetchOrderDetails(1);
-        assertEq(address(1).balance, 1 ether);
+        assertEq(seller.balance, 1 ether);
         assertEq(order.amount, 1 );
-        assertEq(order.seller, address(1));
+        assertEq(order.seller, seller);
         assertEq(uint(order.state), 1);
         assertEq(order.tokenAddress, address(0));
         assertEq(order.buyers.length, 0);
@@ -72,9 +76,11 @@ contract TradeContractTest is Test{
 
     // Test listing Multiple orders using Ether
     function testListMultipleOrdersWithEther() public {
+        //seller1
         hoax(address(1) , 2 ether);
         tradeContract.listOrder{value : 1 ether}(1 , etherAddress);
 
+        //seller2
         hoax(address(3) , 4 ether);
         tradeContract.listOrder{value : 4 ether}(4 , etherAddress);
         
@@ -84,12 +90,14 @@ contract TradeContractTest is Test{
 
     // Test listing Multiple orders using Both Ether and ERC20
     function testListMultipleOrdersWithEtherAndERC20() public {
+        //seller1 = address(1);
         hoax(address(1) , 2 ether);
         tradeContract.listOrder{value : 1 ether}(1 , etherAddress);
-
-        vm.startPrank(address(5));
+        
+        address seller2 = address(5);
+        vm.startPrank(seller2);
         token.approve(address(tradeContract), 1000);
-        assertEq(token.allowance(address(5), address(tradeContract)), 1000);
+        assertEq(token.allowance(seller2, address(tradeContract)), 1000);
 
         tradeContract.listOrder(1000, address(token));
         vm.stopPrank();
@@ -100,9 +108,10 @@ contract TradeContractTest is Test{
 
      // Test registering a buyer
     function testRegisterBuyer() public {
-        vm.startPrank(address(5));
+        address seller = address(5);
+        vm.startPrank(seller);
         token.approve(address(tradeContract), 1000);
-        assertEq(token.allowance(address(5), address(tradeContract)), 1000);
+        assertEq(token.allowance(seller, address(tradeContract)), 1000);
 
         tradeContract.listOrder(1000, address(token));
         vm.stopPrank();
@@ -117,9 +126,10 @@ contract TradeContractTest is Test{
      
      // Test registering multiple buyers
     function testRegisterMultipleBuyers() public {
-        vm.startPrank(address(5));
+        address seller = address(5);
+        vm.startPrank(seller);
         token.approve(address(tradeContract), 1000);
-        assertEq(token.allowance(address(5), address(tradeContract)), 1000);
+        assertEq(token.allowance(seller, address(tradeContract)), 1000);
 
         tradeContract.listOrder(1000, address(token));
         vm.stopPrank();
@@ -130,10 +140,13 @@ contract TradeContractTest is Test{
         vm.prank(address(3));
         tradeContract.registerBuyer(1, 345);
 
-        TradeContract.Order memory order = tradeContract.fetchOrderDetails(1);
-        assertEq(order.buyers.length, 2);
+        vm.startPrank(seller);
         assertEq(tradeContract.getMessages(1, address(1)), 123);
         assertEq(tradeContract.getMessages(1, address(3)), 345);
+        vm.stopPrank();
+
+        TradeContract.Order memory order = tradeContract.fetchOrderDetails(1);
+        assertEq(order.buyers.length, 2);
         assertEq(order.buyers[0], address(1));
         assertEq(order.buyers[1], address(3));
     }
@@ -141,16 +154,17 @@ contract TradeContractTest is Test{
 
     // Test fetching order details
     function testFetchOrderDetails() public {
-        vm.startPrank(address(5));
+        address seller = address(5);
+        vm.startPrank(seller);
         token.approve(address(tradeContract), 1000);
-        assertEq(token.allowance(address(5), address(tradeContract)), 1000);
+        assertEq(token.allowance(seller, address(tradeContract)), 1000);
 
         tradeContract.listOrder(1000, address(token));
         vm.stopPrank();
 
         TradeContract.Order memory order = tradeContract.fetchOrderDetails(1);
         assertEq(order.amount, 1000);
-        assertEq(order.seller, address(5));
+        assertEq(order.seller, seller);
         assertEq(uint(order.state), 1);
         assertEq(order.tokenAddress, address(token));
         assertEq(order.buyers.length, 0);
@@ -162,6 +176,7 @@ contract TradeContractTest is Test{
     function testReleaseEtherFunds() public {
         uint256 privateKey = 123;
         address seller = vm.addr(privateKey);
+        address buyer = address(2);
         deal(seller , 2 ether);
         uint256 message = 456;
 
@@ -177,23 +192,26 @@ contract TradeContractTest is Test{
 
         vm.stopPrank();
         
-        vm.startPrank(address(2));
+        vm.startPrank(buyer);
 
         tradeContract.registerBuyer(1, message);
         address recoveredAddress2 = tradeContract.recover2(messageHashh, signature);
         assertEq(recoveredAddress , recoveredAddress2);
 
-        tradeContract.releaseFunds(1, signature);
+        vm.stopPrank();
+
+        vm.prank(seller);
+        tradeContract.releaseFunds(1, signature , buyer);
         assertEq(address(2).balance, 1 ether); 
         assertEq(address(seller).balance, 1 ether); 
-
-        vm.stopPrank();
     }
 
     // Test releasing ERC20 as funds 
     function testReleaseERC20Funds() public {
         uint256 privateKey = 123;
         address seller = vm.addr(privateKey);
+        address buyer = address(2);
+
         token._mint(seller, 1000);
         uint256 message = 456;
 
@@ -212,22 +230,26 @@ contract TradeContractTest is Test{
 
         vm.stopPrank();
         
-        vm.startPrank(address(2));
+        vm.startPrank(buyer);
 
         tradeContract.registerBuyer(1, message);
         address recoveredAddress2 = tradeContract.recover2(messageHashh, signature);
         assertEq(recoveredAddress , recoveredAddress2);
 
-        tradeContract.releaseFunds(1, signature);
-        assertEq(token.balanceOf(address(2)), 1000); 
-        assertEq(token.balanceOf(seller), 0); 
         vm.stopPrank();
+
+        vm.prank(seller);
+        tradeContract.releaseFunds(1, signature , buyer);
+        assertEq(token.balanceOf(buyer), 1000); 
+        assertEq(token.balanceOf(seller), 0); 
     }
-    
+
     // Failing Test : when the message is different then verified message
     function testFailReleaseToUnverifiedMessage() public {
         uint256 privateKey = 123;
         address seller = vm.addr(privateKey);
+        address buyer = address(2);
+
         token._mint(seller, 1000);
         uint256 message = 789;
 
@@ -246,23 +268,23 @@ contract TradeContractTest is Test{
 
         vm.stopPrank();
         
-        vm.startPrank(address(2));
+        vm.startPrank(buyer);
         //Buyer's Message Is Different
         uint256 buyersMessage = 456;
         tradeContract.registerBuyer(1, buyersMessage);
-        address recoveredAddress2 = tradeContract.recover2(messageHashh, signature);
-        assertEq(recoveredAddress , recoveredAddress2);
 
-        tradeContract.releaseFunds(1, signature);
-        assertEq(token.balanceOf(address(2)), 1000); 
-        assertEq(token.balanceOf(seller), 0); 
         vm.stopPrank();
+        
+        vm.prank(seller);
+        tradeContract.releaseFunds(1, signature , buyer);
     }
     
     // Failing Test : when the funds already got released.
     function testFailForAlreadyReleasedFunds() public {
         uint256 privateKey = 123;
         address seller = vm.addr(privateKey);
+        address buyer = address(2);
+
         deal(seller , 2 ether);
         uint256 message = 456;
 
@@ -278,25 +300,24 @@ contract TradeContractTest is Test{
 
         vm.stopPrank();
         
-        vm.startPrank(address(2));
+        vm.startPrank(buyer);
 
         tradeContract.registerBuyer(1, message);
-        address recoveredAddress2 = tradeContract.recover2(messageHashh, signature);
-        assertEq(recoveredAddress , recoveredAddress2);
 
-        tradeContract.releaseFunds(1, signature);
-        assertEq(address(2).balance, 1 ether); 
+        vm.stopPrank();
+
+        vm.prank(seller);
+        tradeContract.releaseFunds(1, signature , buyer);
+        assertEq(buyer.balance, 1 ether); 
         assertEq(address(seller).balance, 1 ether); 
 
-        vm.stopPrank();
-
-        vm.startPrank(address(3));
+        vm.prank(address(3));
         //Funds are already released for orderId = 1
         tradeContract.registerBuyer(1, 456);  
-        vm.stopPrank();
+        
     }
 
-    // Failing Test : when the buyer tries to register to an Invalid Order Id   
+       // Failing Test : when the buyer tries to register to an Invalid Order Id   
     function testFailBuyersInvalidId() public {
         uint256 privateKey = 123;
         address seller = vm.addr(privateKey);
@@ -323,10 +344,11 @@ contract TradeContractTest is Test{
         vm.stopPrank();
     }
 
-    // Failing Test : when the an Unregistered buyer tries to release the funds
-    function testFailUnregisteredBuyer() public {
+    // Failing Test : when a buyer tries to release the funds
+    function testFailBuyerCantReleaseFunds() public {
         uint256 privateKey = 123;
         address seller = vm.addr(privateKey);
+        address buyer = address(2);
         deal(seller , 2 ether);
         uint256 message = 456;
 
@@ -342,9 +364,11 @@ contract TradeContractTest is Test{
 
         vm.stopPrank();
         
-        vm.startPrank(address(2));
-        //Buyer not registered  
-        tradeContract.releaseFunds(1, signature); 
+        //buyer = address(2)
+        vm.startPrank(buyer);
+        //Buyer tries  to release the funds  
+        tradeContract.releaseFunds(1, signature , buyer); 
+
         vm.stopPrank();
 
     }
