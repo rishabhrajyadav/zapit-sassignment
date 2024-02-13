@@ -169,7 +169,6 @@ contract TradeContractTest is Test{
         assertEq(order.tokenAddress, address(token));
         assertEq(order.buyers.length, 0);
         assertEq(order.messages.length, 0);
-        // Add more assertions based on the expected order details
     }
 
     // Test releasing Ether as funds  
@@ -183,10 +182,10 @@ contract TradeContractTest is Test{
         vm.startPrank(seller);
         tradeContract.listOrder{value : 1 ether}(1 , etherAddress);
         
-        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) ,message)); //msg.sender = buyer's Address
+        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) ,message)); 
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHashh)); 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, messageHash);
-        bytes memory signature = abi.encodePacked(r, s, v); // note the order here is different from line above.
+        bytes memory signature = abi.encodePacked(r, s, v); 
         address recoveredAddress =  messageHash.recover(signature);
         assertEq( recoveredAddress , seller);
 
@@ -221,10 +220,10 @@ contract TradeContractTest is Test{
         assertEq(token.allowance(seller, address(tradeContract)), 1000);
         tradeContract.listOrder(1000, address(token));
         
-        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) , message)); //msg.sender = buyer's Address
+        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) , message)); 
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHashh)); 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, messageHash);
-        bytes memory signature = abi.encodePacked(r, s, v); // note the order here is different from line above.
+        bytes memory signature = abi.encodePacked(r, s, v); 
         address recoveredAddress =  messageHash.recover(signature);
         assertEq( recoveredAddress , seller);
 
@@ -259,10 +258,10 @@ contract TradeContractTest is Test{
         assertEq(token.allowance(seller, address(tradeContract)), 1000);
         tradeContract.listOrder(1000, address(token));
         
-        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) , message)); //msg.sender = buyer's Address
+        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) , message)); 
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHashh)); 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, messageHash);
-        bytes memory signature = abi.encodePacked(r, s, v); // note the order here is different from line above.
+        bytes memory signature = abi.encodePacked(r, s, v); 
         address recoveredAddress =  messageHash.recover(signature);
         assertEq( recoveredAddress , seller);
 
@@ -291,10 +290,10 @@ contract TradeContractTest is Test{
         vm.startPrank(seller);
         tradeContract.listOrder{value : 1 ether}(1 , etherAddress);
         
-        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) ,message)); //msg.sender = buyer's Address
+        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) ,message)); 
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHashh)); 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, messageHash);
-        bytes memory signature = abi.encodePacked(r, s, v); // note the order here is different from line above.
+        bytes memory signature = abi.encodePacked(r, s, v); 
         address recoveredAddress =  messageHash.recover(signature);
         assertEq( recoveredAddress , seller);
 
@@ -355,10 +354,10 @@ contract TradeContractTest is Test{
         vm.startPrank(seller);
         tradeContract.listOrder{value : 1 ether}(1 , etherAddress);
         
-        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) ,message)); //msg.sender = buyer's Address
+        bytes32 messageHashh = keccak256(abi.encodePacked(address(2) ,message)); 
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHashh)); 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, messageHash);
-        bytes memory signature = abi.encodePacked(r, s, v); // note the order here is different from line above.
+        bytes memory signature = abi.encodePacked(r, s, v); 
         address recoveredAddress =  messageHash.recover(signature);
         assertEq( recoveredAddress , seller);
 
