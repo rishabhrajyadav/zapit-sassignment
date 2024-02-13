@@ -47,7 +47,7 @@ This Allows sellers to release funds from an order by verifying the signature.
 - The buyer and seller had an off-chain agreement about the deal.
 - It's only a transfer of token from seller to the buyer.
 
-## Instructions for Testing
+## Testing
 
 Before deploying the smart contract, it's essential to run and pass the provided tests. 
 Ensure that your development environment and dependencies are properly set up. Run the following tests for the `TradeContract`:
